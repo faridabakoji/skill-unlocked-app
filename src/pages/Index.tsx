@@ -414,72 +414,194 @@ function extractSignals(text: string): { label: string; level: Level }[] {
   return top.map((t) => ({ label: t.label, level: toLevel(t.score) }));
 }
 
-/* ---------- Opportunities, ordered by input ---------- */
+/* ---------- Opportunities, routed by input category ---------- */
 function orderOpportunities(text: string): Opp[] {
-  const s = detect(text);
+  const t = text.toLowerCase();
 
-  const oneYoungWorld: Opp = {
-    tag: "Fully funded",
-    tagIcon: <Globe className="h-3 w-3" />,
-    title: "One Young World Sandoz Scholarship",
-    focus: "Global health equity",
-    deadline: "Deadline: May 19, 2026",
-    reason: "Your community work signals exactly the impact-driven leadership they fund.",
-    accent: "primary",
-  };
+  const has = (patterns: RegExp[]) => patterns.some((p) => p.test(t));
 
-  const worldBank: Opp = {
-    tag: "Fully funded",
-    tagIcon: <Globe className="h-3 w-3" />,
-    title: "World Bank Youth Summit Delegate Programme",
-    focus: "SDGs & economic development",
-    deadline: "Applications open",
-    reason: "Your perspective on contribution and access is what this summit needs.",
-    accent: "accent",
-  };
+  const tradeMatch = has([
+    /\btrade\b/, /\bsell/, /\bsold\b/, /\bmarket/, /\bbusiness/, /palm oil/,
+    /shea butter/, /\bcommerce/, /\bvendor/, /\bshop\b/, /\bstall\b/, /\bmerch/,
+    /\bcustom(er|ers)\b/, /\bclient/,
+  ]);
 
-  const hackathon: Opp = {
-    tag: "Open to all",
-    tagIcon: <Code2 className="h-3 w-3" />,
-    title: "Hack-Nation Global AI Hackathon",
-    focus: "Build real economic participation",
-    deadline: "No credentials required",
-    reason: "Builders welcome. Your hands-on technical skills are the only ticket needed.",
-    accent: "primary",
-  };
+  const healthMatch = has([
+    /\bhealth/, /\bmedicine/, /\bmedical/, /\bclinic/, /\bnurs/, /\bwellness/,
+    /\bwellbeing/, /\bcare\b/, /\bdoctor/, /\bpatient/,
+  ]);
 
-  const microGrant: Opp = {
-    tag: "Micro-grant",
-    tagIcon: <Coins className="h-3 w-3" />,
-    title: "Kiva Hustle Micro-Grant",
-    focus: "Working capital for informal traders",
-    deadline: "Rolling applications",
-    reason: "Your trading activity qualifies for unsecured working capital — no collateral.",
-    accent: "accent",
-  };
+  const techMatch = has([
+    /\bcod(e|ing)\b/, /\btechnology\b/, /\btech\b/, /\bsoftware/, /\bai\b/,
+    /\bdata\b/, /\bengineer/, /\bdevelop(er|ment)?\b/, /\bprogram(m|ing)/,
+    /\bapp\b/, /\bweb\b/, /\bhack/,
+  ]);
 
-  const communityScore = s.community + s.organising + s.teaching + s.health;
-  const techScore = s.tech;
-  const tradeScore = s.trade + s.sourcing;
+  const communityMatch = has([
+    /\bcommunity/, /\bteach/, /\beducat/, /\btrain/, /\bmentor/, /\bcoordinat/,
+    /\bwomen\b/, /\bgirls\b/, /\bleader/, /\borgani[sz]/, /\bvillage/, /\bschool/,
+  ]);
 
-  // Decide which card leads
-  let ordered: Opp[];
-  if (techScore >= communityScore && techScore >= tradeScore && techScore > 0) {
-    ordered = [hackathon, worldBank, oneYoungWorld];
-  } else if (tradeScore > communityScore && tradeScore > 0) {
-    ordered = [microGrant, worldBank, oneYoungWorld];
-  } else if (communityScore > 0) {
-    ordered = [oneYoungWorld, worldBank, hackathon];
-  } else {
-    ordered = [oneYoungWorld, worldBank, hackathon];
-  }
+  /* ---------- Trade set ---------- */
+  const tradeSet: Opp[] = [
+    {
+      tag: "Fully funded",
+      tagIcon: <Globe className="h-3 w-3" />,
+      title: "Tony Elumelu Foundation Entrepreneurship Programme",
+      focus: "Funding & mentorship for African entrepreneurs",
+      deadline: "Deadline: June 2026",
+      reason: "Your trading and business activity is exactly the entrepreneurship they fund.",
+      accent: "primary",
+    },
+    {
+      tag: "Open to all",
+      tagIcon: <Coins className="h-3 w-3" />,
+      title: "IFC SME Finance Forum",
+      focus: "For informal business owners across Africa",
+      deadline: "No credentials required",
+      reason: "Built for informal commerce — your hands-on market experience qualifies.",
+      accent: "accent",
+    },
+    {
+      tag: "Fully funded",
+      tagIcon: <Globe className="h-3 w-3" />,
+      title: "Mastercard Foundation Young Africa Works",
+      focus: "Connects young entrepreneurs to markets & capital",
+      deadline: "Applications open",
+      reason: "Your work in informal commerce is the kind of contribution they back.",
+      accent: "primary",
+    },
+  ];
 
-  // If trade signal exists, ensure micro-grant is included
-  if (tradeScore > 0 && !ordered.includes(microGrant)) {
-    ordered = [ordered[0], microGrant, ordered[1]];
-  }
+  /* ---------- Health set ---------- */
+  const healthSet: Opp[] = [
+    {
+      tag: "Fully funded",
+      tagIcon: <Globe className="h-3 w-3" />,
+      title: "One Young World Sandoz Scholarship",
+      focus: "Global health equity",
+      deadline: "Deadline: May 19, 2026",
+      reason: "Your community health work signals exactly the leadership they fund.",
+      accent: "primary",
+    },
+    {
+      tag: "Open globally",
+      tagIcon: <Globe className="h-3 w-3" />,
+      title: "WHO Health for All Film Festival Grant",
+      focus: "For health advocates worldwide",
+      deadline: "Applications open",
+      reason: "Your lived health work makes you an advocate WHO wants to amplify.",
+      accent: "accent",
+    },
+    {
+      tag: "Fully funded",
+      tagIcon: <Globe className="h-3 w-3" />,
+      title: "Africa CDC Youth Health Fellowship",
+      focus: "For young health leaders across Africa",
+      deadline: "Applications open",
+      reason: "Your wellbeing work places you in the next generation of African health leaders.",
+      accent: "primary",
+    },
+  ];
 
-  return ordered.slice(0, 3);
+  /* ---------- Tech set ---------- */
+  const techSet: Opp[] = [
+    {
+      tag: "Open to all",
+      tagIcon: <Code2 className="h-3 w-3" />,
+      title: "Hack-Nation Global AI Hackathon",
+      focus: "Build real economic participation",
+      deadline: "No credentials required",
+      reason: "Builders welcome. Your technical skills are the only ticket needed.",
+      accent: "primary",
+    },
+    {
+      tag: "Funded",
+      tagIcon: <Globe className="h-3 w-3" />,
+      title: "Google for Startups Africa Fund",
+      focus: "Supports tech founders across Africa",
+      deadline: "Rolling applications",
+      reason: "Your technical work fits the founder profile they invest in.",
+      accent: "accent",
+    },
+    {
+      tag: "Fully funded",
+      tagIcon: <Code2 className="h-3 w-3" />,
+      title: "ALX Africa Tech Fellowship",
+      focus: "For emerging tech talent",
+      deadline: "Applications open",
+      reason: "Your self-taught technical skills are exactly who ALX is built for.",
+      accent: "primary",
+    },
+  ];
+
+  /* ---------- Community / leadership set ---------- */
+  const communitySet: Opp[] = [
+    {
+      tag: "Fully funded",
+      tagIcon: <Globe className="h-3 w-3" />,
+      title: "World Bank Youth Summit Delegate Programme",
+      focus: "SDGs & economic development",
+      deadline: "Applications open",
+      reason: "Your community leadership perspective is what this summit needs.",
+      accent: "primary",
+    },
+    {
+      tag: "Fully funded",
+      tagIcon: <Globe className="h-3 w-3" />,
+      title: "Amujae Initiative",
+      focus: "For African women in leadership",
+      deadline: "Applications open",
+      reason: "Your leadership in your community is the foundation Amujae builds on.",
+      accent: "accent",
+    },
+    {
+      tag: "Fully funded",
+      tagIcon: <Globe className="h-3 w-3" />,
+      title: "YALI Network Fellowship",
+      focus: "For community leaders across Africa",
+      deadline: "Applications open",
+      reason: "Your grassroots organising is the kind of leadership YALI invests in.",
+      accent: "primary",
+    },
+  ];
+
+  /* ---------- Default set ---------- */
+  const defaultSet: Opp[] = [
+    {
+      tag: "Fully funded",
+      tagIcon: <Globe className="h-3 w-3" />,
+      title: "World Bank Youth Summit Delegate Programme",
+      focus: "SDGs & economic development",
+      deadline: "Applications open",
+      reason: "Your perspective on contribution and access is what this summit needs.",
+      accent: "primary",
+    },
+    {
+      tag: "Fully funded",
+      tagIcon: <Globe className="h-3 w-3" />,
+      title: "One Young World Sandoz Scholarship",
+      focus: "Global health equity",
+      deadline: "Deadline: May 19, 2026",
+      reason: "Your impact-driven work signals the leadership they fund.",
+      accent: "accent",
+    },
+    {
+      tag: "Open to all",
+      tagIcon: <Code2 className="h-3 w-3" />,
+      title: "Hack-Nation Global AI Hackathon",
+      focus: "Build real economic participation",
+      deadline: "No credentials required",
+      reason: "Builders welcome. No credentials required to participate.",
+      accent: "primary",
+    },
+  ];
+
+  if (tradeMatch) return tradeSet;
+  if (healthMatch) return healthSet;
+  if (techMatch) return techSet;
+  if (communityMatch) return communitySet;
+  return defaultSet;
 }
 
 export default Index;
