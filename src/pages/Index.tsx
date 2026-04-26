@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, Sparkles, Calendar, Globe, Code2, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Sparkles, Calendar, Globe, Code2, CheckCircle2, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -126,6 +126,8 @@ const InputScreen = ({
 );
 
 /* ---------- Screen 3: Results ---------- */
+type Level = "Strong" | "Emerging" | "Developing";
+
 const Results = ({
   description,
   onBack,
@@ -133,7 +135,10 @@ const Results = ({
   description: string;
   onBack: () => void;
 }) => {
+  const understood = extractUnderstanding(description);
   const skills = extractSkills(description);
+  const signals = extractSignals(description);
+  const opportunities = orderOpportunities(description);
 
   return (
     <section className="space-y-6 py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -144,7 +149,23 @@ const Results = ({
         ← Edit
       </button>
 
-      {/* Profile Card */}
+      {/* What we understood */}
+      <div className="rounded-3xl border border-border bg-card p-6 shadow-card">
+        <div className="mb-3 flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+          <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
+          What we understood
+        </div>
+        <ul className="space-y-2.5">
+          {understood.map((line) => (
+            <li key={line} className="flex items-start gap-3 text-base leading-relaxed text-foreground/85">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+              {line}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Skill tags profile */}
       <div className="rounded-3xl bg-gradient-terracotta p-6 text-primary-foreground shadow-warm">
         <div className="mb-1 flex items-center gap-2 text-xs uppercase tracking-[0.2em] opacity-80">
           <Sparkles className="h-3 w-3" />
@@ -156,13 +177,26 @@ const Results = ({
         <div className="mt-5 flex flex-wrap gap-2">
           {skills.map((s) => (
             <span
-              key={s.label}
+              key={s}
               className="rounded-full bg-primary-foreground/15 px-3 py-1.5 text-sm font-medium backdrop-blur-sm"
             >
-              {s.icon} {s.label}
+              {s}
             </span>
           ))}
         </div>
+      </div>
+
+      {/* Capability Signal */}
+      <div className="rounded-3xl border border-border bg-card p-6 shadow-card">
+        <div className="mb-4 flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+          Capability Signal
+        </div>
+        <ul className="space-y-4">
+          {signals.map((sig) => (
+            <SignalRow key={sig.label} label={sig.label} level={sig.level} />
+          ))}
+        </ul>
       </div>
 
       <div className="space-y-1 pt-2">
@@ -176,33 +210,9 @@ const Results = ({
 
       {/* Opportunity Cards */}
       <div className="space-y-4">
-        <OpportunityCard
-          tag="Fully funded"
-          tagIcon={<Globe className="h-3 w-3" />}
-          title="One Young World Sandoz Scholarship"
-          focus="Global health equity"
-          deadline="Deadline: May 19, 2026"
-          reason="Your community work signals exactly the impact-driven leadership they fund."
-          accent="primary"
-        />
-        <OpportunityCard
-          tag="Fully funded"
-          tagIcon={<Globe className="h-3 w-3" />}
-          title="World Bank Youth Summit Delegate Programme"
-          focus="SDGs & economic development"
-          deadline="Applications open"
-          reason="Your perspective on contribution and access is what this summit needs."
-          accent="accent"
-        />
-        <OpportunityCard
-          tag="Open to all"
-          tagIcon={<Code2 className="h-3 w-3" />}
-          title="Hack-Nation Global AI Hackathon"
-          focus="Build real economic participation"
-          deadline="No credentials required"
-          reason="Builders welcome. Your hands-on skills are the only ticket needed."
-          accent="primary"
-        />
+        {opportunities.map((o) => (
+          <OpportunityCard key={o.title} {...o} />
+        ))}
       </div>
 
       <p className="pt-4 text-center text-xs text-muted-foreground">
@@ -212,15 +222,46 @@ const Results = ({
   );
 };
 
-const OpportunityCard = ({
-  tag,
-  tagIcon,
-  title,
-  focus,
-  deadline,
-  reason,
-  accent,
-}: {
+/* ---------- Capability Signal Row ---------- */
+const SignalRow = ({ label, level }: { label: string; level: Level }) => {
+  const filled = level === "Strong" ? 3 : level === "Emerging" ? 2 : 1;
+  const levelColor =
+    level === "Strong"
+      ? "text-accent"
+      : level === "Emerging"
+      ? "text-primary"
+      : "text-muted-foreground";
+
+  return (
+    <li className="flex items-center justify-between gap-4">
+      <span className="text-sm font-medium text-foreground sm:text-base">{label}</span>
+      <div className="flex items-center gap-3">
+        <div className="flex gap-1">
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className={`h-2 w-6 rounded-full ${
+                i < filled
+                  ? level === "Strong"
+                    ? "bg-accent"
+                    : level === "Emerging"
+                    ? "bg-primary"
+                    : "bg-primary/50"
+                  : "bg-muted"
+              }`}
+            />
+          ))}
+        </div>
+        <span className={`w-20 text-right text-xs font-semibold uppercase tracking-wider ${levelColor}`}>
+          {level}
+        </span>
+      </div>
+    </li>
+  );
+};
+
+/* ---------- Opportunity Card ---------- */
+type Opp = {
   tag: string;
   tagIcon: React.ReactNode;
   title: string;
@@ -228,7 +269,9 @@ const OpportunityCard = ({
   deadline: string;
   reason: string;
   accent: "primary" | "accent";
-}) => {
+};
+
+const OpportunityCard = ({ tag, tagIcon, title, focus, deadline, reason, accent }: Opp) => {
   const tagBg = accent === "primary" ? "bg-primary-soft text-primary" : "bg-accent-soft text-accent";
   const btnBg =
     accent === "primary"
@@ -241,9 +284,7 @@ const OpportunityCard = ({
         {tagIcon}
         {tag}
       </div>
-      <h5 className="font-display text-xl font-600 leading-snug text-card-foreground">
-        {title}
-      </h5>
+      <h5 className="font-display text-xl font-600 leading-snug text-card-foreground">{title}</h5>
       <p className="mt-1 text-sm text-muted-foreground">{focus}</p>
 
       <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -264,36 +305,181 @@ const OpportunityCard = ({
   );
 };
 
-/* ---------- helpers ---------- */
-function extractSkills(text: string): { label: string; icon: string }[] {
+/* ---------- Signal detection helpers ---------- */
+type Signals = {
+  community: number;
+  teaching: number;
+  trade: number;
+  tech: number;
+  craft: number;
+  health: number;
+  sourcing: number;
+  organising: number;
+};
+
+function detect(text: string): Signals {
   const t = text.toLowerCase();
-  const tags: { label: string; icon: string }[] = [];
+  const score = (patterns: RegExp[]) =>
+    patterns.reduce((n, p) => n + (t.match(p)?.length ?? 0), 0);
 
-  if (/(teach|train|mentor|learn|school|student)/.test(t))
-    tags.push({ label: "Education & Mentorship", icon: "🎓" });
-  if (/(code|develop|software|app|web|ai|data|tech|program)/.test(t))
-    tags.push({ label: "Technology & Building", icon: "💻" });
-  if (/(community|village|organi|volunteer|help|health|social)/.test(t))
-    tags.push({ label: "Community Impact", icon: "🌍" });
-  if (/(make|craft|weave|design|art|sew|cook|build|create)/.test(t))
-    tags.push({ label: "Craft & Creation", icon: "✋" });
-  if (/(sell|trade|market|business|shop|client|customer)/.test(t))
-    tags.push({ label: "Enterprise & Trade", icon: "📈" });
-  if (/(write|story|tell|speak|language|translate)/.test(t))
-    tags.push({ label: "Communication", icon: "🗣️" });
+  return {
+    community: score([/community/g, /village/g, /neighbou?r/g, /local/g, /people/g]),
+    teaching: score([/teach/g, /train/g, /mentor/g, /show others/g, /learn/g, /school/g]),
+    trade: score([/sell/g, /sold/g, /trade/g, /market/g, /shop/g, /custom(er|ers)/g, /client/g, /buy/g, /price/g]),
+    tech: score([/code/g, /coding/g, /develop/g, /software/g, /\bapp\b/g, /\bweb\b/g, /\bai\b/g, /data/g, /tech/g, /program/g, /hack/g]),
+    craft: score([/weave/g, /sew/g, /craft/g, /\bmake\b/g, /build/g, /design/g, /art\b/g, /cook/g, /\bbake\b/g],),
+    health: score([/health/g, /clinic/g, /\bcare\b/g, /nurs/g, /medicine/g, /wellbeing/g],),
+    sourcing: score([/source/g, /supply/g, /supplier/g, /grow/g, /harvest/g, /farm/g, /raw material/g],),
+    organising: score([/organi[sz]e/g, /coordinat/g, /lead/g, /\brun\b/g, /manage/g, /gather/g],),
+  };
+}
 
-  // Always show three categories
+/* ---------- "What we understood" ---------- */
+function extractUnderstanding(text: string): string[] {
+  const s = detect(text);
+  const lines: { score: number; line: string }[] = [];
+
+  if (s.community + s.organising > 0)
+    lines.push({ score: s.community + s.organising + 1, line: "You coordinate people within your community." });
+  if (s.teaching > 0)
+    lines.push({ score: s.teaching + 1, line: "You pass on knowledge to others around you." });
+  if (s.trade > 0)
+    lines.push({ score: s.trade + 1, line: "You engage in informal trade and sales." });
+  if (s.tech > 0)
+    lines.push({ score: s.tech + 1, line: "You build with technology, often outside formal settings." });
+  if (s.craft > 0)
+    lines.push({ score: s.craft + 1, line: "You make things with your hands and create real value." });
+  if (s.health > 0)
+    lines.push({ score: s.health + 1, line: "You contribute to the wellbeing of people around you." });
+  if (s.sourcing > 0)
+    lines.push({ score: s.sourcing + 1, line: "You work close to where things are grown, made, or sourced." });
+
+  // Fallbacks so we always have 2–3 lines
   const fallback = [
-    { label: "Practical Skills", icon: "🛠️" },
-    { label: "Lived Experience", icon: "🌱" },
-    { label: "Initiative & Drive", icon: "⚡" },
+    "You contribute to local problem solving.",
+    "You take initiative without waiting for permission.",
+    "You bring lived experience that systems often overlook.",
   ];
-  while (tags.length < 3) {
+  while (lines.length < 3) {
     const next = fallback.shift();
     if (!next) break;
-    if (!tags.find((x) => x.label === next.label)) tags.push(next);
+    if (!lines.find((l) => l.line === next)) lines.push({ score: 0, line: next });
   }
-  return tags.slice(0, 3);
+
+  return lines.sort((a, b) => b.score - a.score).slice(0, 3).map((l) => l.line);
+}
+
+/* ---------- Specific skill tags ---------- */
+function extractSkills(text: string): string[] {
+  const s = detect(text);
+  const candidates: { score: number; label: string }[] = [
+    { score: s.teaching * 2, label: "Peer Education" },
+    { score: s.community + s.organising * 2, label: "Community Coordination" },
+    { score: s.trade * 2, label: "Informal Sales" },
+    { score: s.sourcing * 2 + (s.trade > 0 ? 1 : 0), label: "Local Sourcing" },
+    { score: s.tech * 2, label: "Applied Technology" },
+    { score: s.craft * 2, label: "Hands-On Production" },
+    { score: s.health * 2, label: "Care & Wellbeing" },
+    { score: s.organising, label: "Grassroots Leadership" },
+    { score: s.trade + s.craft, label: "Customer Relationships" },
+  ];
+
+  const picked = candidates.filter((c) => c.score > 0).sort((a, b) => b.score - a.score).map((c) => c.label);
+
+  const fallback = ["Practical Problem Solving", "Lived Experience", "Self-Directed Initiative"];
+  while (picked.length < 3) {
+    const next = fallback.shift();
+    if (!next) break;
+    if (!picked.includes(next)) picked.push(next);
+  }
+  return picked.slice(0, 4);
+}
+
+/* ---------- Capability signals with levels ---------- */
+function extractSignals(text: string): { label: string; level: Level }[] {
+  const s = detect(text);
+  const toLevel = (n: number): Level => (n >= 3 ? "Strong" : n >= 1 ? "Emerging" : "Developing");
+
+  const all = [
+    { label: "Community Coordination", score: s.community + s.organising * 2 },
+    { label: "Informal Sales", score: s.trade * 2 + s.sourcing },
+    { label: "Technical Skills", score: s.tech * 2 },
+    { label: "Peer Education", score: s.teaching * 2 },
+    { label: "Hands-On Craft", score: s.craft * 2 },
+    { label: "Care & Wellbeing", score: s.health * 2 },
+  ];
+
+  // Pick top 3 by score, but always include at least one even if zero
+  const top = all.sort((a, b) => b.score - a.score).slice(0, 3);
+  return top.map((t) => ({ label: t.label, level: toLevel(t.score) }));
+}
+
+/* ---------- Opportunities, ordered by input ---------- */
+function orderOpportunities(text: string): Opp[] {
+  const s = detect(text);
+
+  const oneYoungWorld: Opp = {
+    tag: "Fully funded",
+    tagIcon: <Globe className="h-3 w-3" />,
+    title: "One Young World Sandoz Scholarship",
+    focus: "Global health equity",
+    deadline: "Deadline: May 19, 2026",
+    reason: "Your community work signals exactly the impact-driven leadership they fund.",
+    accent: "primary",
+  };
+
+  const worldBank: Opp = {
+    tag: "Fully funded",
+    tagIcon: <Globe className="h-3 w-3" />,
+    title: "World Bank Youth Summit Delegate Programme",
+    focus: "SDGs & economic development",
+    deadline: "Applications open",
+    reason: "Your perspective on contribution and access is what this summit needs.",
+    accent: "accent",
+  };
+
+  const hackathon: Opp = {
+    tag: "Open to all",
+    tagIcon: <Code2 className="h-3 w-3" />,
+    title: "Hack-Nation Global AI Hackathon",
+    focus: "Build real economic participation",
+    deadline: "No credentials required",
+    reason: "Builders welcome. Your hands-on technical skills are the only ticket needed.",
+    accent: "primary",
+  };
+
+  const microGrant: Opp = {
+    tag: "Micro-grant",
+    tagIcon: <Coins className="h-3 w-3" />,
+    title: "Kiva Hustle Micro-Grant",
+    focus: "Working capital for informal traders",
+    deadline: "Rolling applications",
+    reason: "Your trading activity qualifies for unsecured working capital — no collateral.",
+    accent: "accent",
+  };
+
+  const communityScore = s.community + s.organising + s.teaching + s.health;
+  const techScore = s.tech;
+  const tradeScore = s.trade + s.sourcing;
+
+  // Decide which card leads
+  let ordered: Opp[];
+  if (techScore >= communityScore && techScore >= tradeScore && techScore > 0) {
+    ordered = [hackathon, worldBank, oneYoungWorld];
+  } else if (tradeScore > communityScore && tradeScore > 0) {
+    ordered = [microGrant, worldBank, oneYoungWorld];
+  } else if (communityScore > 0) {
+    ordered = [oneYoungWorld, worldBank, hackathon];
+  } else {
+    ordered = [oneYoungWorld, worldBank, hackathon];
+  }
+
+  // If trade signal exists, ensure micro-grant is included
+  if (tradeScore > 0 && !ordered.includes(microGrant)) {
+    ordered = [ordered[0], microGrant, ordered[1]];
+  }
+
+  return ordered.slice(0, 3);
 }
 
 export default Index;
